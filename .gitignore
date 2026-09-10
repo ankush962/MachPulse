@@ -1,0 +1,90 @@
+# =========================
+# macOS
+# =========================
+.DS_Store
+
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+
+.venv/
+venv/
+env/
+
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+.ipynb_checkpoints/
+
+# =========================
+# Environment
+# =========================
+.env
+.env.local
+.env.development
+.env.production
+
+!.env.example
+
+# =========================
+# ML Models
+# =========================
+*.pkl
+*.pickle
+*.joblib
+*.pt
+*.pth
+*.onnx
+*.h5
+*.keras
+
+# =========================
+# Local Data
+# =========================
+data/raw/*
+data/processed/*
+data/models/*
+data/samples/*
+
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/models/.gitkeep
+!data/samples/.gitkeep
+
+# =========================
+# Node / React
+# =========================
+node_modules/
+dist/
+build/
+.next/
+.vite/
+coverage/
+
+# =========================
+# Android
+# =========================
+.gradle/
+.idea/
+*.iml
+local.properties
+
+**/build/
+**/.cxx/
+captures/
+
+# =========================
+# Logs
+# =========================
+*.log
+
+# =========================
+# Temporary files
+# =========================
+*.tmp
+*.temp
