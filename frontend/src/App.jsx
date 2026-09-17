@@ -1,122 +1,358 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
+import {
+  connectMonitor,
+} from "./services/websocket";
+
+import "./App.css";
+
 
 function App() {
-  const [count, setCount] = useState(0)
+
+  const socketRef = useRef(null);
+
+  const [connected, setConnected] =
+    useState(false);
+
+  const [demoMode, setDemoMode] =
+    useState(true);
+
+  const [machineId, setMachineId] =
+    useState("M01");
+
+  const [data, setData] =
+    useState(null);
+
+  const [history, setHistory] =
+    useState([]);
+
+  const connect = () => {
+
+    socketRef.current?.close();
+
+    const socket =
+      connectMonitor({
+        machineId,
+        demo: demoMode,
+
+        onOpen: () => {
+          setConnected(true);
+        },
+
+        onClose: () => {
+          setConnected(false);
+        },
+
+        onError: (error) => {
+          console.error(error);
+          setConnected(false);
+        },
+
+        onMessage: (message) => {
+
+          if (
+            message.status !== "ok"
+          ) {
+            return;
+          }
+
+          setData(message);
+
+          const health =
+            message.analysis?.health_score;
+
+          if (
+            typeof health === "number"
+          ) {
+            setHistory((previous) => [
+              ...previous.slice(-19),
+              health,
+            ]);
+          }
+        },
+      });
+
+    socketRef.current = socket;
+  };
+
+
+  const disconnect = () => {
+
+    socketRef.current?.close();
+
+    socketRef.current = null;
+
+    setConnected(false);
+  };
+
+
+  useEffect(() => {
+
+    return () => {
+      socketRef.current?.close();
+    };
+
+  }, []);
+
+
+  const analysis =
+    data?.analysis || {};
+
+  const features =
+    data?.features || {};
+
+
+  const health =
+    Number(
+      analysis.health_score ?? 100
+    );
+
+  const risk =
+    analysis.risk ?? "LOW";
+
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
+    <div className="app">
+
+      <header className="header">
+
         <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
+          <div className="brand">
+            MachPulse
+          </div>
+
+          <div className="subtitle">
+            Predict machine problems
+            before downtime.
+          </div>
         </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
+
+        <div
+          className={
+            connected
+              ? "status connected"
+              : "status"
+          }
         >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+          <span />
+          {connected
+            ? "Connected"
+            : "Disconnected"}
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+      </header>
+
+
+      <main className="content">
+
+        <section className="controls">
+
+          <input
+            value={machineId}
+            onChange={(event) =>
+              setMachineId(
+                event.target.value
+              )
+            }
+            placeholder="Machine ID"
+          />
+
+          <label>
+            <input
+              type="checkbox"
+              checked={demoMode}
+              onChange={(event) =>
+                setDemoMode(
+                  event.target.checked
+                )
+              }
+            />
+            Demo Mode
+          </label>
+
+          <button
+            onClick={connect}
+          >
+            Start Monitoring
+          </button>
+
+          <button
+            className="secondary"
+            onClick={disconnect}
+          >
+            Stop
+          </button>
+
+        </section>
+
+
+        <section className="grid">
+
+          <div className="card health-card">
+
+            <div className="card-title">
+              Machine Health
+            </div>
+
+            <div
+              className={
+                `health-value ${
+                  health < 60
+                    ? "danger"
+                    : health < 80
+                    ? "warning"
+                    : ""
+                }`
+              }
+            >
+              {health.toFixed(0)}
+              <span>/100</span>
+            </div>
+
+            <div className="risk">
+              Risk: {risk}
+            </div>
+
+          </div>
+
+
+          <div className="card">
+
+            <div className="card-title">
+              Vibration
+            </div>
+
+            <div className="metric">
+              RMS
+              <strong>
+                {Number(
+                  features.rms ?? 0
+                ).toFixed(3)}
+              </strong>
+            </div>
+
+            <div className="metric">
+              Dominant Frequency
+              <strong>
+                {Number(
+                  features.dominant_frequency ?? 0
+                ).toFixed(2)}
+                Hz
+              </strong>
+            </div>
+
+          </div>
+
+
+          <div className="card">
+
+            <div className="card-title">
+              Detection
+            </div>
+
+            <div
+              className={
+                analysis.is_anomaly
+                  ? "alert active"
+                  : "alert"
+              }
+            >
+              {analysis.is_anomaly
+                ? "ANOMALY DETECTED"
+                : "Machine operating normally"}
+            </div>
+
+            <div className="metric">
+              Anomaly Score
+              <strong>
+                {Number(
+                  analysis.anomaly_score ?? 0
+                ).toFixed(2)}
+              </strong>
+            </div>
+
+          </div>
+
+        </section>
+
+
+        <section className="card">
+
+          <div className="card-title">
+            Health Trend
+          </div>
+
+          <div className="bars">
+
+            {history.map(
+              (value, index) => (
+                <div
+                  className="bar-wrapper"
+                  key={index}
+                >
+                  <div
+                    className="bar"
+                    style={{
+                      height:
+                        `${Math.max(
+                          value,
+                          5
+                        )}%`,
+                    }}
+                  />
+                </div>
+              )
+            )}
+
+          </div>
+
+        </section>
+
+
+        <section className="card">
+
+          <div className="card-title">
+            Maintenance Advisor
+          </div>
+
+          {data?.ai_advice ? (
+
+            <div className="advice">
+              {data.ai_advice}
+            </div>
+
+          ) : analysis.status ===
+            "calibrating" ? (
+
+            <div className="advice">
+              Calibrating machine baseline...
+              <br />
+              Window{" "}
+              {analysis.calibration_progress}
+              {" / "}
+              {analysis.calibration_total}
+            </div>
+
+          ) : (
+
+            <div className="advice muted">
+              No maintenance action
+              required right now.
+            </div>
+
+          )}
+
+        </section>
+
+      </main>
+
+    </div>
+  );
 }
 
-export default App
+
+export default App;
