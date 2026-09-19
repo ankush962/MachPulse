@@ -24,9 +24,8 @@ export function connectMonitor({
 
   socket.onmessage = (event) => {
     try {
-      const data = JSON.parse(
-        event.data
-      );
+      const data =
+        JSON.parse(event.data);
 
       onMessage?.(data);
     } catch (error) {
